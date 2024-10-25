@@ -1,4 +1,4 @@
-package com.xiao.notify.model.domain;
+package com.xiao.notify.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -16,8 +17,8 @@ import java.util.Date;
  * @author lh
  */
 @Data
-@TableName(value = "user")
-public class User implements Serializable {
+@TableName(value = "user_info")
+public class UserInfo implements Serializable {
 
     /**
      * id
@@ -83,13 +84,13 @@ public class User implements Serializable {
      * 创建时间
      */
     @TableField("create_time")
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
     @TableField("update_time")
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     /**
      * 是否删除

@@ -25,12 +25,21 @@ spring:
     database: 8
     host: localhost
     port: 6379
+  mail:
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
   global-config:
     db-config:
-      logic-delete-field: isDelete
-      logic-delete-value:
+      logic-delete-field: is_delete
+      logic-delete-value: 1
       logic-not-delete-value: 0

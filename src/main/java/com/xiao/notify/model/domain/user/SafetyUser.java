@@ -1,4 +1,4 @@
-package com.xiao.notify.model.domain;
+package com.xiao.notify.model.domain.user;
 
 import lombok.Data;
 
@@ -15,7 +15,6 @@ public class SafetyUser implements Serializable {
     /**
      * id
      */
-
     private Long id;
 
     /**

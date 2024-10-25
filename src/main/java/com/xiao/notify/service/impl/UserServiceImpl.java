@@ -1,14 +1,19 @@
 package com.xiao.notify.service.impl;
 
+import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiao.notify.common.ErrorCode;
 import com.xiao.notify.exception.BusinessException;
 import com.xiao.notify.mapper.UserMapper;
-import com.xiao.notify.model.domain.SafetyUser;
-import com.xiao.notify.model.domain.User;
+import com.xiao.notify.model.domain.user.SafetyUser;
+import com.xiao.notify.model.entity.UserInfo;
+import com.xiao.notify.model.domain.user.request.UserAddRequest;
+import com.xiao.notify.model.domain.user.request.UserQueryRequest;
+import com.xiao.notify.model.domain.user.request.UserUpdateRequest;
 import com.xiao.notify.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +34,7 @@ import static com.xiao.notify.contant.UserConstant.USER_LOGIN_STATE;
  */
 @Slf4j
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, UserInfo> implements UserService {
 
     /**
      * 盐值，混淆密码
@@ -77,8 +82,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         synchronized (userAccount.intern()) {
             // 账户不能重复
-            LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
-            wrapper.eq(User::getUserAccount, userAccount);
+            LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+            wrapper.eq(UserInfo::getUserAccount, userAccount);
             long count = userMapper.selectCount(wrapper);
             if (count > 0) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
@@ -86,14 +91,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
             // 3. 插入数据
-            User user = new User();
-            user.setUserAccount(userAccount);
-            user.setUserPassword(encryptPassword);
-            boolean saveResult = this.save(user);
+            UserInfo userInfo = new UserInfo();
+            userInfo.setUserAccount(userAccount);
+            userInfo.setUserPassword(encryptPassword);
+            boolean saveResult = this.save(userInfo);
             if (!saveResult) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户注册失败，请联系管理员处理");
             }
-            return user.getId();
+            return userInfo.getId();
         }
     }
 
@@ -126,14 +131,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
         // 查询用户是否存在
-        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
-        wrapper.eq(User::getUserAccount, userAccount).eq(User::getUserPassword, encryptPassword);
-        User user = userMapper.selectOne(wrapper);
-        if (Objects.isNull(user)) {
+        LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(UserInfo::getUserAccount, userAccount).eq(UserInfo::getUserPassword, encryptPassword);
+        UserInfo userInfo = userMapper.selectOne(wrapper);
+        if (Objects.isNull(userInfo)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名或密码错误");
         }
         // 3. 用户脱敏
-        SafetyUser safetyUser = getSafetyUser(user);
+        SafetyUser safetyUser = getSafetyUser(userInfo);
         // 4. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
         return safetyUser;
@@ -142,24 +147,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     /**
      * 用户脱敏
      *
-     * @param originUser
+     * @param originUserInfo
      * @return
      */
     @Override
-    public SafetyUser getSafetyUser(User originUser) {
-        if (Objects.isNull(originUser)) {
+    public SafetyUser getSafetyUser(UserInfo originUserInfo) {
+        if (Objects.isNull(originUserInfo)) {
             return null;
         }
         SafetyUser user = new SafetyUser();
-        user.setId(originUser.getId());
-        user.setUsername(originUser.getUsername());
-        user.setUserAccount(originUser.getUserAccount());
-        user.setAvatarUrl(originUser.getAvatarUrl());
-        user.setGender(originUser.getGender());
-        user.setPhone(originUser.getPhone());
-        user.setEmail(originUser.getEmail());
-        user.setUserRole(originUser.getUserRole());
-        user.setUserStatus(originUser.getUserStatus());
+        user.setId(originUserInfo.getId());
+        user.setUsername(originUserInfo.getUsername());
+        user.setUserAccount(originUserInfo.getUserAccount());
+        user.setAvatarUrl(originUserInfo.getAvatarUrl());
+        user.setGender(originUserInfo.getGender());
+        user.setPhone(originUserInfo.getPhone());
+        user.setEmail(originUserInfo.getEmail());
+        user.setUserRole(originUserInfo.getUserRole());
+        user.setUserStatus(originUserInfo.getUserStatus());
         return user;
     }
 
@@ -172,6 +177,78 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void userLogout(HttpServletRequest request) {
         // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
+    }
+
+    @Override
+    public Wrapper<UserInfo> getQueryWrapper(UserQueryRequest userQueryRequest) {
+        Long id = userQueryRequest.getId();
+        String userName = userQueryRequest.getUserName();
+        LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(Objects.nonNull(id), UserInfo::getId, id)
+                .like(StrUtil.isNotBlank(userName), UserInfo::getUsername, userName);
+        return wrapper;
+    }
+
+    @Override
+    public long addUser(UserAddRequest request) {
+        String username = request.getUsername();
+        String userAccount = request.getUserAccount();
+        Integer gender = request.getGender();
+        String email = request.getEmail();
+        String phone = request.getPhone();
+        // 1. 校验
+        if (ObjUtil.hasEmpty(username, gender, email, phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (userAccount.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名长度不能小于4位");
+        }
+        if (userAccount.length() > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号长度大于20位");
+        }
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUsername(username);
+        userInfo.setUserAccount(userAccount);
+        userInfo.setGender(gender);
+        userInfo.setEmail(email);
+        userInfo.setPhone(phone);
+        userInfo.setUserRole(0);
+        userInfo.setUserStatus(0);
+        userInfo.setAvatarUrl("https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg");
+        userInfo.setUserPassword(DigestUtils.md5DigestAsHex((SALT + "123456").getBytes()));
+        synchronized (userInfo.toString().intern()) {
+            int inserted = baseMapper.insert(userInfo);
+            if (inserted <= 0) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户创建失败");
+            }
+        }
+        return userInfo.getId();
+    }
+
+    @Override
+    public boolean updateUser(UserUpdateRequest request) {
+        Long id = request.getId();
+        String username = request.getUsername();
+        Integer gender = request.getGender();
+        String email = request.getEmail();
+        String phone = request.getPhone();
+        // 1. 校验
+        if (ObjUtil.isAllEmpty(username, gender, email, phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserInfo userInfo = new UserInfo();
+        userInfo.setId(id);
+        userInfo.setUsername(username);
+        userInfo.setGender(gender);
+        userInfo.setEmail(email);
+        userInfo.setPhone(phone);
+        synchronized (userInfo.toString().intern()) {
+            int updated = baseMapper.updateById(userInfo);
+            if (updated <= 0) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户更新失败");
+            }
+        }
+        return true;
     }
 
 }

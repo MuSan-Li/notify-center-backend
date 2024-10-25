@@ -19,7 +19,12 @@ public enum ErrorCode {
 
     NO_AUTH(40101, "无权限", ""),
 
-    SYSTEM_ERROR(50000, "系统内部异常", "");
+    SYSTEM_ERROR(50000, "系统内部异常", ""),
+
+    DATA_IS_EMPTY(50001, "数据为空", ""),
+
+    ENUM_IS_EMPTY(50002, "枚举信息为空", ""),
+    ;
 
     private final int code;
 

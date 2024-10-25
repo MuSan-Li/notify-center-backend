@@ -14,7 +14,7 @@
     <groupId>com.xiao</groupId>
     <artifactId>notify-center-backend</artifactId>
     <version>0.0.1</version>
-    <name>user-center-backend</name>
+    <name>userInfo-center-backend</name>
     <description>notify-center-backend</description>
 
     <properties>
@@ -82,6 +82,12 @@
             <artifactId>knife4j-spring-boot-starter</artifactId>
             <version>3.0.3</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
 
     </dependencies>
 

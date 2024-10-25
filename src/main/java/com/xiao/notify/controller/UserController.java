@@ -3,19 +3,23 @@ package com.xiao.notify.controller;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiao.notify.common.BaseResponse;
 import com.xiao.notify.common.ErrorCode;
 import com.xiao.notify.common.ResultUtils;
 import com.xiao.notify.exception.BusinessException;
-import com.xiao.notify.model.domain.SafetyUser;
-import com.xiao.notify.model.domain.User;
-import com.xiao.notify.model.domain.request.UserLoginRequest;
-import com.xiao.notify.model.domain.request.UserRegisterRequest;
+import com.xiao.notify.model.domain.user.SafetyUser;
+import com.xiao.notify.model.entity.UserInfo;
+import com.xiao.notify.model.domain.user.request.UserAddRequest;
+import com.xiao.notify.model.domain.user.request.UserDeleteRequest;
+import com.xiao.notify.model.domain.user.request.UserLoginRequest;
+import com.xiao.notify.model.domain.user.request.UserQueryRequest;
+import com.xiao.notify.model.domain.user.request.UserRegisterRequest;
+import com.xiao.notify.model.domain.user.request.UserUpdateRequest;
 import com.xiao.notify.service.UserService;
-import io.swagger.annotations.Api;
+import com.xiao.notify.utils.PageConverter;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +39,7 @@ import static com.xiao.notify.contant.UserConstant.USER_LOGIN_STATE;
  *
  * @author lh
  */
-@Api(tags = {"用户管理"})
+// @Api(tags = {"用户管理"})
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -114,8 +118,8 @@ public class UserController {
         }
         long userId = currentUser.getId();
         // TODO 校验用户是否合法
-        User user = userService.getById(userId);
-        SafetyUser safetyUser = userService.getSafetyUser(user);
+        UserInfo userInfo = userService.getById(userId);
+        SafetyUser safetyUser = userService.getSafetyUser(userInfo);
         return ResultUtils.success(safetyUser);
     }
 
@@ -132,31 +136,91 @@ public class UserController {
         if (!isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
-        wrapper.like(StrUtil.isNotBlank(userAccount), User::getUserAccount, userAccount);
-        List<User> userList = userService.list(wrapper);
-        List<SafetyUser> list = userList.stream()
-                .map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+        wrapper.like(StrUtil.isNotBlank(userAccount), UserInfo::getUserAccount, userAccount);
+        List<UserInfo> userInfoList = userService.list(wrapper);
+        List<SafetyUser> list = userInfoList.stream()
+                .map(userInfo -> userService.getSafetyUser(userInfo)).collect(Collectors.toList());
         return ResultUtils.success(list);
+    }
+
+    /**
+     * 分页获取用户列表（仅管理员）
+     *
+     * @param userQueryRequest
+     * @return
+     */
+    @ApiOperation(value = "用户分页查询")
+    @PostMapping("/list/page")
+    public BaseResponse<Page<SafetyUser>> listUserByPage(@RequestBody UserQueryRequest userQueryRequest,
+                                                         HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        long current = userQueryRequest.getCurrent();
+        long size = userQueryRequest.getPageSize();
+        Page<UserInfo> userPage = userService.page(new Page<UserInfo>(current, size),
+                userService.getQueryWrapper(userQueryRequest));
+        Page<SafetyUser> convertPage = PageConverter.convertPage(userPage, SafetyUser.class);
+        return ResultUtils.success(convertPage);
+    }
+
+    /**
+     * 添加用户
+     *
+     * @param request
+     * @return
+     */
+    @ApiOperation(value = "添加用户")
+    @PostMapping("/addUser")
+    public BaseResponse<Long> addUser(@RequestBody UserAddRequest addRequest, HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (Objects.isNull(request)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long result = userService.addUser(addRequest);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 更新用户
+     *
+     * @param request
+     * @return
+     */
+    @ApiOperation(value = "更新用户")
+    @PostMapping("/updateUser")
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest updateRequest, HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (Objects.isNull(request)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean result = userService.updateUser(updateRequest);
+        return ResultUtils.success(result);
     }
 
     /**
      * 删除用户
      *
-     * @param id
+     * @param deleteRequest
      * @param request
      * @return
      */
     @ApiOperation(value = "删除用户")
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
-        if (id <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+    public BaseResponse<Boolean> deleteUser(@RequestBody UserDeleteRequest deleteRequest,
+                                            HttpServletRequest request) {
         if (!isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        boolean flag = userService.removeById(id);
+        if (Objects.isNull(deleteRequest) || deleteRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean flag = userService.removeById(deleteRequest.getId());
         return ResultUtils.success(flag);
     }
 

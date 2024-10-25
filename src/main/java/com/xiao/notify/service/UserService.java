@@ -1,8 +1,12 @@
 package com.xiao.notify.service;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.xiao.notify.model.domain.SafetyUser;
-import com.xiao.notify.model.domain.User;
+import com.xiao.notify.model.domain.user.SafetyUser;
+import com.xiao.notify.model.entity.UserInfo;
+import com.xiao.notify.model.domain.user.request.UserAddRequest;
+import com.xiao.notify.model.domain.user.request.UserQueryRequest;
+import com.xiao.notify.model.domain.user.request.UserUpdateRequest;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -11,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @author lh
  */
-public interface UserService extends IService<User> {
+public interface UserService extends IService<UserInfo> {
 
     /**
      * 用户注册
@@ -36,10 +40,10 @@ public interface UserService extends IService<User> {
     /**
      * 用户脱敏
      *
-     * @param originUser
+     * @param originUserInfo
      * @return
      */
-    SafetyUser getSafetyUser(User originUser);
+    SafetyUser getSafetyUser(UserInfo originUserInfo);
 
 
     /**
@@ -48,4 +52,28 @@ public interface UserService extends IService<User> {
      * @param request
      */
     void userLogout(HttpServletRequest request);
+
+    /**
+     * 组装wapper对象
+     *
+     * @param userQueryRequest
+     * @return
+     */
+    Wrapper<UserInfo> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 创建用户
+     *
+     * @param request
+     * @return
+     */
+    long addUser(UserAddRequest request);
+
+    /**
+     * 更新用户信息
+     *
+     * @param request
+     * @return
+     */
+    boolean updateUser(UserUpdateRequest request);
 }
