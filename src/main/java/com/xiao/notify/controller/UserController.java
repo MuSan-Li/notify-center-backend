@@ -1,23 +1,21 @@
 package com.xiao.notify.controller;
 
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiao.notify.common.BaseResponse;
 import com.xiao.notify.common.ErrorCode;
 import com.xiao.notify.common.ResultUtils;
 import com.xiao.notify.exception.BusinessException;
 import com.xiao.notify.model.domain.user.SafetyUser;
-import com.xiao.notify.model.entity.UserInfo;
 import com.xiao.notify.model.domain.user.request.UserAddRequest;
 import com.xiao.notify.model.domain.user.request.UserDeleteRequest;
 import com.xiao.notify.model.domain.user.request.UserLoginRequest;
 import com.xiao.notify.model.domain.user.request.UserQueryRequest;
 import com.xiao.notify.model.domain.user.request.UserRegisterRequest;
 import com.xiao.notify.model.domain.user.request.UserUpdateRequest;
+import com.xiao.notify.model.entity.UserInfo;
 import com.xiao.notify.service.UserService;
 import com.xiao.notify.utils.PageConverter;
+import com.xiao.notify.utils.UserUtils;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,11 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
-import static com.xiao.notify.contant.UserConstant.ADMIN_ROLE;
 import static com.xiao.notify.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -130,19 +125,19 @@ public class UserController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "用户查询")
-    @GetMapping("/search")
-    public BaseResponse<List<SafetyUser>> searchUsers(String userAccount, HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
-        LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
-        wrapper.like(StrUtil.isNotBlank(userAccount), UserInfo::getUserAccount, userAccount);
-        List<UserInfo> userInfoList = userService.list(wrapper);
-        List<SafetyUser> list = userInfoList.stream()
-                .map(userInfo -> userService.getSafetyUser(userInfo)).collect(Collectors.toList());
-        return ResultUtils.success(list);
-    }
+    // @ApiOperation(value = "用户查询")
+    // @GetMapping("/search")
+    // public BaseResponse<List<SafetyUser>> searchUsers(String userAccount, HttpServletRequest request) {
+    //     if (!UserUtils.isAdmin(request)) {
+    //         throw new BusinessException(ErrorCode.NO_AUTH);
+    //     }
+    //     LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
+    //     wrapper.like(StrUtil.isNotBlank(userAccount), UserInfo::getUserAccount, userAccount);
+    //     List<UserInfo> userInfoList = userService.list(wrapper);
+    //     List<SafetyUser> list = userInfoList.stream()
+    //             .map(userInfo -> userService.getSafetyUser(userInfo)).collect(Collectors.toList());
+    //     return ResultUtils.success(list);
+    // }
 
     /**
      * 分页获取用户列表（仅管理员）
@@ -154,8 +149,11 @@ public class UserController {
     @PostMapping("/list/page")
     public BaseResponse<Page<SafetyUser>> listUserByPage(@RequestBody UserQueryRequest userQueryRequest,
                                                          HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!UserUtils.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (Objects.isNull(userQueryRequest)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         long current = userQueryRequest.getCurrent();
         long size = userQueryRequest.getPageSize();
@@ -174,10 +172,10 @@ public class UserController {
     @ApiOperation(value = "添加用户")
     @PostMapping("/addUser")
     public BaseResponse<Long> addUser(@RequestBody UserAddRequest addRequest, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!UserUtils.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        if (Objects.isNull(request)) {
+        if (Objects.isNull(addRequest)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         long result = userService.addUser(addRequest);
@@ -193,10 +191,10 @@ public class UserController {
     @ApiOperation(value = "更新用户")
     @PostMapping("/updateUser")
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest updateRequest, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!UserUtils.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        if (Objects.isNull(request)) {
+        if (Objects.isNull(updateRequest)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean result = userService.updateUser(updateRequest);
@@ -214,7 +212,7 @@ public class UserController {
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUser(@RequestBody UserDeleteRequest deleteRequest,
                                             HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!UserUtils.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (Objects.isNull(deleteRequest) || deleteRequest.getId() <= 0) {
@@ -223,19 +221,4 @@ public class UserController {
         boolean flag = userService.removeById(deleteRequest.getId());
         return ResultUtils.success(flag);
     }
-
-
-    /**
-     * 是否为管理员
-     *
-     * @param request
-     * @return
-     */
-    private boolean isAdmin(HttpServletRequest request) {
-        // 仅管理员可查询
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        SafetyUser safetyUser = (SafetyUser) userObj;
-        return Objects.nonNull(safetyUser) && safetyUser.getUserRole() == ADMIN_ROLE;
-    }
-
 }

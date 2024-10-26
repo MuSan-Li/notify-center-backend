@@ -1,19 +1,27 @@
 package com.xiao.notify.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiao.notify.common.ErrorCode;
 import com.xiao.notify.common.enums.NotifyTypeEnum;
 import com.xiao.notify.exception.BusinessException;
 import com.xiao.notify.mapper.NotifyConfigMapper;
-import com.xiao.notify.model.domain.notify.request.SendNotifyRequest;
+import com.xiao.notify.model.domain.notify.request.NotifyConfigPageReq;
+import com.xiao.notify.model.domain.notify.request.NotifySendRequest;
+import com.xiao.notify.model.domain.notify.response.NotifyConfigResp;
 import com.xiao.notify.model.domain.user.SafetyUser;
 import com.xiao.notify.model.entity.EmailConfig;
 import com.xiao.notify.model.entity.NotifyConfig;
-import com.xiao.notify.model.entity.NotifyInfoLog;
+import com.xiao.notify.model.entity.NotifyLog;
 import com.xiao.notify.service.EmailConfigService;
 import com.xiao.notify.service.NotifyConfigService;
-import com.xiao.notify.service.NotifyInfoLogService;
+import com.xiao.notify.service.NotifyLogService;
+import com.xiao.notify.utils.PageConverter;
+import com.xiao.notify.utils.UserUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -25,10 +33,8 @@ import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
 
-import static com.xiao.notify.contant.UserConstant.USER_LOGIN_STATE;
-
 /**
- * 订阅配置表(SendNotifyRequest)表服务实现类
+ * 订阅配置表(NotifySendRequest)表服务实现类
  *
  * @author lh
  * @since 2024-10-22 21:29:47
@@ -39,17 +45,13 @@ public class NotifyConfigServiceImpl
         extends ServiceImpl<NotifyConfigMapper, NotifyConfig> implements NotifyConfigService {
 
     @Resource
-    private NotifyInfoLogService notifyInfoLogService;
+    private NotifyLogService notifyLogService;
     @Resource
     private EmailConfigService emailConfigService;
 
-    @Resource
-    private JavaMailSender mailSender;
-
     @Override
-    public boolean sendNotify(SendNotifyRequest notifyRequest, HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        SafetyUser safetyUser = (SafetyUser) userObj;
+    public boolean sendNotify(NotifySendRequest notifyRequest, HttpServletRequest request) {
+        SafetyUser safetyUser = UserUtils.getCurrentUser(request);
         if (Objects.isNull(notifyRequest) || notifyRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -67,10 +69,13 @@ public class NotifyConfigServiceImpl
                 }
                 // 发送邮件
                 boolean sendEmail = sendEmail(notifyConfig, emailConfig, safetyUser);
-                NotifyInfoLog notifyInfoLog = new NotifyInfoLog();
-                notifyInfoLog.setStatus(sendEmail ? 1 : 0);
-                notifyInfoLog.setNotifyType(notifyTypeEnum.getCode());
-                boolean saved = notifyInfoLogService.save(notifyInfoLog);
+                NotifyLog notifyLog = new NotifyLog();
+                notifyLog.setNotifyConfigId(notifyConfig.getId());
+                notifyLog.setNotifyConfigName(notifyConfig.getName());
+                notifyLog.setStatus(sendEmail ? 1 : 0);
+                notifyLog.setUserId(safetyUser.getId());
+                notifyLog.setNotifyType(notifyTypeEnum.getCode());
+                boolean saved = notifyLogService.save(notifyLog);
                 log.debug("saved:{}", saved);
                 break;
             case SMS:
@@ -81,13 +86,28 @@ public class NotifyConfigServiceImpl
         return true;
     }
 
+    @Override
+    public Page<NotifyConfigResp> getByPage(NotifyConfigPageReq req, HttpServletRequest request) {
+        LambdaQueryWrapper<NotifyConfig> wrapper = Wrappers.lambdaQuery();
+        String name = req.getName();
+        int current = req.getCurrent();
+        int pageSize = req.getPageSize();
+        wrapper.like(StrUtil.isNotBlank(name), NotifyConfig::getName, name);
+        if (!UserUtils.isAdmin(request)) {
+            wrapper.eq(NotifyConfig::getUserId, UserUtils.getCurrentUser(request).getId());
+        }
+        Page<NotifyConfig> page = page(new Page<>(current, pageSize), wrapper);
+        return PageConverter.convertPage(page, NotifyConfigResp.class);
+    }
+
     public boolean sendEmail(NotifyConfig notifyConfig, EmailConfig emailConfig, SafetyUser safetyUser) {
         try {
+            JavaMailSender mailSender = emailConfigService.getMailSender(emailConfig);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StringPool.UTF_8);
             helper.setFrom(emailConfig.getUsername());
             helper.setTo(safetyUser.getEmail());
-            helper.setSubject("小小订阅通知");
+            helper.setSubject(notifyConfig.getName());
             helper.setText(notifyConfig.getContent(), true);
             mailSender.send(message);
             return true;

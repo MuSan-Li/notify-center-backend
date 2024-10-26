@@ -9,17 +9,16 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 
 /**
- * 订阅配置表(SendNotifyRequest)表实体类
+ * 订阅配置表(NotifySendRequest)表实体类
  *
  * @author lh
  * @since 2024-10-22
  */
 @Data
-@TableName(value = "notify_config")
+@TableName(value = "t_notify_config")
 public class NotifyConfig implements Serializable {
 
     //id
@@ -37,9 +36,17 @@ public class NotifyConfig implements Serializable {
     //通知方式 邮件，短信...
     @TableField("notify_type")
     private Integer notifyType;
+
+    //corn表达式
+    @TableField("corn")
+    private String corn;
     //备注
     @TableField("remarks")
     private String remarks;
+
+    @TableField("user_id")
+    private Long userId;
+
     //创建时间
     @TableField("create_time")
     private LocalDateTime createTime;

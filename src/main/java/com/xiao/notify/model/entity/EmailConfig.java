@@ -9,7 +9,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * 邮箱配置表(EmailConfig)表实体类
@@ -18,7 +17,7 @@ import java.util.Date;
  * @since 2024-10-22 21:29:46
  */
 @Data
-@TableName(value = "email_config")
+@TableName(value = "t_email_config")
 public class EmailConfig implements Serializable {
 
     //id
@@ -37,11 +36,14 @@ public class EmailConfig implements Serializable {
     @TableField("password")
     private String password;
     //配置信息json
-    @TableField("config")
-    private String config;
+    @TableField("props")
+    private String props;
     //备注
     @TableField("remarks")
     private String remarks;
+    //状态
+    @TableField("status")
+    private Integer status;
     //创建时间
     @TableField("create_time")
     private LocalDateTime createTime;

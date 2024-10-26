@@ -11,14 +11,14 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 订阅信息记录表(NotifyInfoLog)表实体类
+ * 订阅信息记录表(NotifyLog)表实体类
  *
  * @author lh
  * @since 2024-10-22 21:29:47
  */
 @Data
-@TableName(value = "notify_info_log")
-public class NotifyInfoLog implements Serializable {
+@TableName(value = "t_notify_log")
+public class NotifyLog implements Serializable {
 
     //id
     @TableId(type = IdType.AUTO)
@@ -26,6 +26,9 @@ public class NotifyInfoLog implements Serializable {
     //订阅配置id
     @TableField("notify_config_id")
     private Long notifyConfigId;
+    //订阅配置名称
+    @TableField("notify_config_name")
+    private String notifyConfigName;
     //发送状态
     @TableField("status")
     private Integer status;
@@ -35,6 +38,8 @@ public class NotifyInfoLog implements Serializable {
     //备注
     @TableField("remarks")
     private String remarks;
+    @TableField("user_id")
+    private Long userId;
     //创建时间
     @TableField("create_time")
     private LocalDateTime createTime;

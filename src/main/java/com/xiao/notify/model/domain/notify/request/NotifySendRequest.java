@@ -12,7 +12,8 @@ import java.io.Serializable;
  * @since 2024-10-22
  */
 @Data
-public class SendNotifyRequest implements Serializable {
+public class NotifySendRequest implements Serializable {
+
     // 订阅通知id
     private Long id;
 }
