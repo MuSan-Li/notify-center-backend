@@ -1,19 +1,18 @@
-package com.xiao.notify.model.domain.notify.response;
+package com.xiao.notify.model.domain.notify.request;
 
 import lombok.Data;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 
 /**
- * 订阅配置表响应
+ * 订阅请求
  *
  * @author lh
  * @since 2024-10-22
  */
 @Data
-public class NotifyConfigResp implements Serializable {
+public class NotifyConfigRequest implements Serializable {
 
     //id
     private Long id;
@@ -29,8 +28,4 @@ public class NotifyConfigResp implements Serializable {
     private String corn;
     //备注
     private String remarks;
-    //创建时间
-    private LocalDateTime createTime;
-    //更新时间
-    private LocalDateTime updateTime;
 }

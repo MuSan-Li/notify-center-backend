@@ -119,27 +119,6 @@ public class UserController {
     }
 
     /**
-     * 用户查询
-     *
-     * @param userAccount
-     * @param request
-     * @return
-     */
-    // @ApiOperation(value = "用户查询")
-    // @GetMapping("/search")
-    // public BaseResponse<List<SafetyUser>> searchUsers(String userAccount, HttpServletRequest request) {
-    //     if (!UserUtils.isAdmin(request)) {
-    //         throw new BusinessException(ErrorCode.NO_AUTH);
-    //     }
-    //     LambdaQueryWrapper<UserInfo> wrapper = Wrappers.lambdaQuery();
-    //     wrapper.like(StrUtil.isNotBlank(userAccount), UserInfo::getUserAccount, userAccount);
-    //     List<UserInfo> userInfoList = userService.list(wrapper);
-    //     List<SafetyUser> list = userInfoList.stream()
-    //             .map(userInfo -> userService.getSafetyUser(userInfo)).collect(Collectors.toList());
-    //     return ResultUtils.success(list);
-    // }
-
-    /**
      * 分页获取用户列表（仅管理员）
      *
      * @param userQueryRequest

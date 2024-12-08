@@ -8,7 +8,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum NotifyTypeEnum {
+
     EMAIL(1, "邮件"),
+
     SMS(2, "短信"),
     ;
     private final Integer code;

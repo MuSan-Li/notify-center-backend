@@ -21,10 +21,12 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+
   redis:
     database: 8
     host: localhost
     port: 6379
+
   mail:
     protocol: smtp
     properties:
@@ -34,6 +36,25 @@ spring:
           starttls:
             enable: true
             required: true
+
+#  quartz:
+#    job-store-type: jdbc  # 使用数据库存储作业信息
+#    scheduler-name: MyScheduler  # 调度器名称
+#    auto-startup: true  # 启动时自动运行
+#    wait-for-jobs-to-complete-on-shutdown: true  # 应用关闭时等待正在执行的作业完成
+#    overwrite-existing-jobs: false  # 不覆盖已有的作业
+#    properties:
+#      org.quartz.scheduler.instanceId: AUTO  # 实例ID
+#      org.quartz.threadPool.class: org.quartz.simpl.SimpleThreadPool  # 线程池实现类
+#      org.quartz.threadPool.threadCount: 10  # 线程池大小
+#      org.quartz.threadPool.threadPriority: 5  # 线程优先级
+#      org.quartz.jobStore.class: org.quartz.impl.jdbcjobstore.JobStoreTX  # 作业存储实现类
+#      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate  # JDBC代理类
+#      org.quartz.jobStore.tablePrefix: QRTZ_  # 数据库表前缀
+#      org.quartz.jobStore.isClustered: false  # 是否集群
+#      org.quartz.jobStore.clusterCheckinInterval: 10000  # 集群检查间隔
+#      org.quartz.jobStore.misfireThreshold: 60000  # 错失阈值
+#      org.quartz.jobStore.txIsolationLevelSerializable: true  # 事务隔离级别
 
 mybatis-plus:
   configuration:

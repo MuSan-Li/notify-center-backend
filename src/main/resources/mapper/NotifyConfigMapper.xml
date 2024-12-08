@@ -6,4 +6,13 @@
 <mapper namespace="com.xiao.notify.mapper.NotifyConfigMapper">
 
 
+    <select id="getNotifyConfigActiveList" resultType="com.xiao.notify.model.entity.NotifyConfig">
+        select id as id,
+        job_class_name as jobClassName,
+        job_group as jobGroup,
+        job_name as jobName,
+        corn as corn
+        from t_notify_config
+        where notify_status = 0;
+    </select>
 </mapper>
